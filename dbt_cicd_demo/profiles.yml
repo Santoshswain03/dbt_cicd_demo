@@ -1,0 +1,39 @@
+# Replace 'dbt_cicd_demo' with the profile name found in your dbt_project.yml
+dbt_cicd_demo:
+  target: dev
+  outputs:
+    # 1. LOCAL DEVELOPMENT (Your manual work)
+    dev:
+      type: snowflake
+      account: your_snowflake_account_here.us-east-1
+      user: your_username
+      password: your_password
+      role: accountadmin
+      warehouse: compute_wh
+      database: airbnb_db
+      schema: dev_schema
+      threads: 4
+
+    # 2. CI (AUTOMATED TESTING - Temporary Sandbox)
+    ci:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE') }}"
+      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE') }}"
+      schema: DBT_CI_TEST_SCHEMA  # dbt creates this for testing PRs
+      threads: 4
+
+    # 3. CD (PRODUCTION DEPLOY - Real Tables)
+    prod:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE') }}"
+      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE') }}"
+      schema: PRODUCTION_AIRBNB  # This is your ACTUAL live data schema
+      threads: 4

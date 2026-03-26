@@ -1,0 +1,41 @@
+name: dbt_production_deploy
+
+# This trigger runs ONLY when code is merged into the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy_to_prod:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./dbt_cicd_demo
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-snowflake
+          dbt deps
+
+      - name: Deploy to Production
+        env:
+          # Use the same secrets as before
+          DBT_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          DBT_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          DBT_SNOWFLAKE_PW: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          DBT_SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          DBT_SNOWFLAKE_WH: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          DBT_SNOWFLAKE_DB: ${{ secrets.SNOWFLAKE_DATABASE }}
+        run: |
+          # Use --target prod to write to your REAL tables
+          dbt build --target prod

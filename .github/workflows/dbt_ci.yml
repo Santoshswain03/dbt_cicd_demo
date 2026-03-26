@@ -1,0 +1,48 @@
+name: dbt_slim_ci
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  dbt_ci_run:
+    runs-on: ubuntu-latest
+
+    # This tells GitHub to go inside your specific folder
+    defaults:
+      run:
+        working-directory: ./dbt_cicd_demo
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history so dbt can compare branches
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt and Snowflake Adapter
+        run: |
+          pip install dbt-snowflake
+          dbt deps
+
+      - name: Run dbt CI (Slim Mode)
+        env:
+          # These must be set in GitHub Repo Settings > Secrets
+          DBT_SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          DBT_SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          DBT_SNOWFLAKE_PW: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          DBT_SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          DBT_SNOWFLAKE_WH: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          DBT_SNOWFLAKE_DB: ${{ secrets.SNOWFLAKE_DATABASE }}
+        run: |
+          # 1. Verify connection
+          dbt debug --target ci
+          
+          # 2. Build ONLY modified models and their children
+          # We use 'state:modified+' to save time and Snowflake credits
+          dbt build --select state:modified+ --target ci --state .
